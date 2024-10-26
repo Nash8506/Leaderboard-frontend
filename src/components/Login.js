@@ -1,53 +1,50 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 function Login() {
-    const { login } = useAuth(); // Access login function from AuthContext
-    const [email, setEmail] = useState('');
+    const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
-    const [error, setError] = useState(null);
+    const { setUser } = useAuth();
+    const navigate = useNavigate();
 
-    // Handle form submission
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+    const handleLogin = async () => {
         try {
-            const response = await axios.post('http://localhost:5000/api/login', {
-                email,
-                password,
-            });
-            const token = response.data.token;
-            login(token); // Log in user with token
-        } catch (err) {
-            setError('Login failed. Please check your credentials.');
+            // Send login credentials to the backend
+            const response = await axios.post('http://localhost:5000/api/login', { username, password });
+            
+            // Set user information in the context
+            setUser(response.data.user);
+
+            // Redirect based on user role
+            if (response.data.user.role === 'admin') {
+                navigate('/admin-dashboard');
+            } else if (response.data.user.role === 'player') {
+                navigate('/player-dashboard');
+            }
+        } catch (error) {
+            console.error('Login failed:', error);
+            alert('Invalid login credentials.');
         }
     };
 
     return (
-        <div className="login-container">
+        <div className="login">
             <h2>Login</h2>
-            <form onSubmit={handleSubmit}>
-                <div>
-                    <label>Email:</label>
-                    <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                    />
-                </div>
-                <div>
-                    <label>Password:</label>
-                    <input
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                    />
-                </div>
-                {error && <p className="error">{error}</p>}
-                <button type="submit">Login</button>
-            </form>
+            <input
+                type="text"
+                placeholder="Username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+            />
+            <input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+            />
+            <button onClick={handleLogin}>Login</button>
         </div>
     );
 }
